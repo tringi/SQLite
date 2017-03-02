@@ -82,6 +82,14 @@ class SQLite {
                 };
                 
                 void execute (); // fails for select
+
+                template <typename A, typename... Args>
+                void execute (A a, Args... args) {
+                    this->reset ();
+                    this->bind (a);
+                    this->bind (args...);
+                    return this->execute ();
+                };
                 
                 // select
                 
@@ -148,10 +156,7 @@ class SQLite {
         template <typename... Args>
         std::size_t execute (const std::wstring & string, Args... args) {
             auto q = this->prepare (string);
-
-            q.bind (args...);
-            q.execute ();
-            
+            q.execute (args...);
             return this->changes ();
         };
 
