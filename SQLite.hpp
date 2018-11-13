@@ -3,10 +3,11 @@
 
 /* SQLite 
 // SQLite.hpp
-// Version: 0.1
+// Version: 0.2
 //
 // Changelog:
 //      20.10.2015 - initial version
+//      13.11.2018 - rewritten open, last inserted rowid, updated comments
 */
 
 #include <stdexcept>
@@ -139,20 +140,26 @@ class SQLite {
     
     public:
         
-        // open/close
-        
-        bool        open (const std::wstring &);
-        void        close ();
+        // open
+        //  - opens new connection to db file (closes previous connection)
+        //  - on failure any previous connection remains valid
+        //
+        bool open (const std::wstring &);
+
+        // close
+        //  - closes connection to the database file
+        //
+        void close ();
         
         // prepare
         //  - creates new statement based on SQL query
-        
+        //
         Statement   prepare (const std::wstring &);
         
         // execute
         //  - executes string query
         //  - returns number of changes
-        
+        //
         template <typename... Args>
         std::size_t execute (const std::wstring & string, Args... args) {
             auto q = this->prepare (string);
@@ -163,7 +170,7 @@ class SQLite {
         // query
         //  - executes string query
         //  - returns value of the first column of the first row
-        
+        //
         template <typename R, typename... Args>
         R query (const std::wstring & string, Args... args) {
             return this->prepare (string) .query <R> (args...);
@@ -171,12 +178,17 @@ class SQLite {
 
         // changes
         //  - returns number of affected rows for INSERT, UPDATE and DELETE
-        
+        //
         std::size_t changes () const;
-        
+
+        // last_insert_rowid
+        //  - returns ROWID of last inserted row; not thread safe
+        //
+        long long last_insert_rowid () const;
+
         // error/errmsg
-        //  - 
-        
+        //  - returns last error code or formatted error message
+        //
         int          error () const;
         std::wstring errmsg () const;
     

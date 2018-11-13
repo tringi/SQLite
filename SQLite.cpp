@@ -1,12 +1,8 @@
 #include "SQLite.hpp"
 
-/* SQLite 
+// SQLite 
 // SQLite.cpp
-// Version: 0.1
-//
-// Changelog:
-//      20.10.2015 - initial version
-*/
+// Version: 0.2
 
 #include "sqlite3.h"
 #include <cstdio>
@@ -28,9 +24,9 @@ namespace {
 std::string w2a (const std::wstring & w) {
     
     std::vector <char> s;
-    if (auto n = WideCharToMultiByte (CP_UTF8, 0, w.c_str (), w.length (), NULL, 0, NULL, NULL)) {
+    if (auto n = WideCharToMultiByte (CP_UTF8, 0, w.c_str (), (int) w.length (), NULL, 0, NULL, NULL)) {
         s.resize (n);
-        if (WideCharToMultiByte (CP_UTF8, 0, w.c_str (), w.length (), &s[0], n, NULL, NULL)) {
+        if (WideCharToMultiByte (CP_UTF8, 0, w.c_str (), (int) w.length (), &s[0], n, NULL, NULL)) {
             return std::string (s.begin (), s.end ());
         };
     };
@@ -177,13 +173,13 @@ void SQLite::Statement::bind (unsigned long long value) {
         throw SQLite::Exception ("bind", this->stmt);
 };
 void SQLite::Statement::bind (const std::wstring & value) {
-    if (sqlite3_bind_text16 (this->stmt, ++this->bi, value.data (), value.size () * sizeof (wchar_t), SQLITE_TRANSIENT) != SQLITE_OK)
+    if (sqlite3_bind_text16 (this->stmt, ++this->bi, value.data (), (int) (value.size () * sizeof (wchar_t)), SQLITE_TRANSIENT) != SQLITE_OK)
         throw SQLite::Exception ("bind", this->stmt);
 };
 void SQLite::Statement::bind (const std::vector <unsigned char> & value) {
     static const unsigned char empty [1] = { 0 };
     if (sqlite3_bind_blob (this->stmt, ++this->bi,
-                           value.empty () ? empty : value.data (), value.size (),
+                           value.empty () ? empty : value.data (), (int) value.size (),
                            SQLITE_TRANSIENT) != SQLITE_OK)
         throw SQLite::Exception ("bind", this->stmt);
 };
@@ -210,11 +206,19 @@ template <> std::vector <unsigned char> SQLite::Statement::get <std::vector <uns
 };
 
 bool SQLite::open (const std::wstring & filename) {
-    return sqlite3_open16 (filename.c_str (), &this->db) == SQLITE_OK;
+    sqlite3 * newdb = nullptr;
+    if (sqlite3_open16 (filename.c_str (), &newdb) == SQLITE_OK) {
+        this->close ();
+        this->db = newdb;
+        return true;
+    } else
+        return false;
 };
 void SQLite::close () {
-    sqlite3_close (this->db);
-    this->db = nullptr;
+    if (this->db) {
+        sqlite3_close (this->db);
+        this->db = nullptr;
+    }
 };
 
 SQLite::Statement SQLite::prepare (const std::wstring & query) {
@@ -227,6 +231,10 @@ SQLite::Statement SQLite::prepare (const std::wstring & query) {
 
 std::size_t SQLite::changes () const {
     return sqlite3_changes (this->db);
+};
+
+long long SQLite::last_insert_rowid () const {
+    return sqlite3_last_insert_rowid (this->db);
 };
 
 int SQLite::error () const {

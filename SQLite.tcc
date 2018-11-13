@@ -1,13 +1,9 @@
 #ifndef SQLITE_TCC
 #define SQLITE_TCC
 
-/* SQLite 
+// SQLite 
 // SQLite.tcc
-// Version: 0.1
-//
-// Changelog:
-//      20.10.2015 - initial version
-*/
+// Version: 0.2
 
 template <> int SQLite::Statement::get <int> (int column) const;
 template <> double SQLite::Statement::get <double> (int column) const;
